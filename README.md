@@ -128,7 +128,9 @@ The main TeX macros that relate your TeX code to your Agda code are:
 
 * `\agda` that lists the fully qualified Agda names corresponding to the
   surrounding definition or statement, such as `Cubical.Foundations.Prelude.refl`
-  or, for a record field, `Cubical.Algebra.Group.Base.IsGroup.·InvL`.
+  or, for a record field, `Cubical.Algebra.Group.Base.IsGroup.·InvL`. Separate
+  names by a comma and a space: a mixfix name like `NE[_,_]` may itself contain
+  commas, but no Agda name contains whitespace.
 * `\agdaok` which claims the surrounding environment is fully formalized. Here
   an environment could be either a definition/statement or a proof. Unlike in
   Lean, where `sorry` lets a statement be formalized without its proof, a

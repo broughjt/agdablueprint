@@ -10,6 +10,7 @@ Options:
 
 You can also add options that will be passed to the dependency graph package.
 """
+import re
 import string
 from pathlib import Path
 
@@ -109,12 +110,13 @@ class libraryok(Command):
 
 
 class agda(Command):
-    r"""\agda{decl list} """
-    args = 'decls:list:nox'
+    r"""\agda{decl list}: names separated by a comma and whitespace, since a
+    mixfix Agda name like NE[_,_] may itself contain commas."""
+    args = 'decls:str'
 
     def digest(self, tokens):
         Command.digest(self, tokens)
-        decls = [dec.strip() for dec in self.attributes['decls']]
+        decls = [dec for dec in re.split(r',\s+', self.attributes['decls'].strip()) if dec]
         self.parentNode.setUserData('agdadecls', decls)
         all_decls = self.ownerDocument.userdata.setdefault('agda_decls', [])
         all_decls.extend(decls)

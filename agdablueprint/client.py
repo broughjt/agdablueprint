@@ -351,8 +351,11 @@ def pdf() -> None:
 
 def mk_web() -> None:
     (blueprint_root/"web").mkdir(exist_ok=True)
-    subprocess.run("plastex -c plastex.cfg web.tex",
-                   cwd=str(blueprint_root/"src"), check=True, shell=True)
+    # Run plasTeX with this interpreter, which sees the plugins, rather than
+    # whichever plastex executable comes first on the PATH.
+    subprocess.run([sys.executable, "-c", "from plasTeX.client import plastex; plastex()",
+                    "-c", "plastex.cfg", "web.tex"],
+                   cwd=str(blueprint_root/"src"), check=True)
 @cli.command()
 def web() -> None:
     """
