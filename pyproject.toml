@@ -24,11 +24,7 @@ authors = [
   {name="Patrick Massot"},
   {name="Peter LeFanu Lumsdaine"},
   {name="Andrej Bauer"},
-  {name="Reinis Cirpons"},
-  {name="Jackson Brough"}
-]
-maintainers = [
-  {name="Jackson Brough", email="jacksontbrough@gmail.com"}
+  {name="Reinis Cirpons"}
 ]
 description = "Agda blueprint plasTeX plugin."
 readme = "README.md"
