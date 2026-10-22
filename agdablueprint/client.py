@@ -383,7 +383,8 @@ def do_checkdecls(html_dir: Path) -> None:
     missing = [decl for decl in decls_path.read_text().split()
                if agda_html.resolve(decl) is None]
     for decl in missing:
-        console.print(f"[error]{decl}[/] is missing.")
+        # Keep each name on one line so the output stays greppable.
+        console.print(f"[error]{decl}[/] is missing.", soft_wrap=True)
     if missing:
         sys.exit(1)
     console.print("All declarations exist.")
