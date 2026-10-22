@@ -130,7 +130,9 @@ The main TeX macros that relate your TeX code to your Agda code are:
   surrounding definition or statement, such as `Cubical.Foundations.Prelude.refl`
   or, for a record field, `Cubical.Algebra.Group.Base.IsGroup.·InvL`.
 * `\agdaok` which claims the surrounding environment is fully formalized. Here
-  an environment could be either a definition/statement or a proof.
+  an environment could be either a definition/statement or a proof. Unlike in
+  Lean, where `sorry` lets a statement be formalized without its proof, a
+  statement marked `\agdaok` with no proof environment counts as proved.
 * `\uses` that lists LaTeX labels that are used in the surrounding environment.
   This information is used to create the dependency graph. Here
   an environment could be either a definition/statement or a proof, depending on

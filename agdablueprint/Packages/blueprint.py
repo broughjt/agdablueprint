@@ -243,7 +243,10 @@ def ProcessOptions(options, document):
                         'agdaok', False)
                 else:
                     node.userdata['can_prove'] = False
-                    node.userdata['proved'] = False
+                    # Lean's sorry lets a statement be formalized without a proof,
+                    # but Agda has no counterpart that survives --safe, so a
+                    # formalized statement whose proof the blueprint omits is proved.
+                    node.userdata['proved'] = node.userdata.get('agdaok', False)
 
             for node in nodes:
                 node.userdata['fully_proved'] = all(n.userdata.get('proved', False) or item_kind(
