@@ -5,6 +5,7 @@ import platform
 import re
 import shutil
 import socketserver
+import stat
 import subprocess
 import sys
 import tomlkit
@@ -350,7 +351,14 @@ def pdf() -> None:
 
 
 def mk_web() -> None:
-    (blueprint_root/"web").mkdir(exist_ok=True)
+    web_dir = blueprint_root/"web"
+    web_dir.mkdir(exist_ok=True)
+    # plasTeX copies its static files with shutil.copy2, which keeps their
+    # permissions. Installed read-only (as in the Nix store), they cannot be
+    # overwritten by the next run, so make the previous output writable.
+    for path in web_dir.rglob("*"):
+        if not path.is_symlink():
+            path.chmod(path.stat().st_mode | stat.S_IWUSR)
     # Run plasTeX with this interpreter, which sees the plugins, rather than
     # whichever plastex executable comes first on the PATH.
     subprocess.run([sys.executable, "-c", "from plasTeX.client import plastex; plastex()",
