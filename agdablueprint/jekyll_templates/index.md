@@ -12,7 +12,7 @@ usemathjax: true
 
 Useful links:
 
-* [Zulip chat for Rocq](https://rocq-prover.zulipchat.com/) for coordination
+* [Agda Zulip](https://agda.zulipchat.com/) for coordination
 * [Blueprint]({{ site.url }}/blueprint/)
 * [Blueprint as pdf]({{ site.url }}/blueprint.pdf)
 * [Dependency graph]({{ site.url }}/blueprint/dep_graph_document.html)

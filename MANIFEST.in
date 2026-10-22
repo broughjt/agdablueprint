@@ -1,4 +1,4 @@
-include rocqblueprint/static/*
-recursive-include rocqblueprint/templates *
-recursive-include rocqblueprint/jekyll_templates *
-include rocqblueprint/Packages/renderer_templates/*
+include agdablueprint/static/*
+recursive-include agdablueprint/templates *
+recursive-include agdablueprint/jekyll_templates *
+include agdablueprint/Packages/renderer_templates/*

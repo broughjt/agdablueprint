@@ -1,9 +1,11 @@
 .mypy_cache/
 d3-graphviz-3.0.4/
 jq/
-rocqblueprint.egg-info
+agdablueprint.egg-info
 __pycache__
 .sass-cache/
 .python-version
 build/
 dist/
+result
+result-*

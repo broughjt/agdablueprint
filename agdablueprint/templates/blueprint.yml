@@ -23,20 +23,12 @@ jobs:
     name: Build project blueprint
     env:
       homepage: "home_page"
-      # The rocq version to use. Use "latest" to use the latest version of Rocq.
-      # For more info see the `coq_version` parameter of the `docker-coq-action`:
-      # https://github.com/rocq-community/docker-coq-action?tab=readme-ov-file#coq_version
-      rocq_version: "{| rocq_version |}"
-      # The opam file to use to build the project.
-      opam_file: "{| opamfile |}"
-      # A custom command to build the docs. If it is too long to give in a single line,
-      # please edit the "Build docs" group below.
-      custom_doc_command: "{| custom_doc_command |}"
+      # The module importing everything, from which we generate the HTML documentation.
+      main_module: "{| main_module |}"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags
-          submodules: 'true' # Get submodules, necessary for e.g. coqdocjs
 
       - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
         id: check_home_page
@@ -49,43 +41,16 @@ jobs:
             echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      - name: Build rocq project
-        uses: coq-community/docker-coq-action@v1
-        with:
-          opam_file: ${{ env.opam_file }}
-          coq_version: ${{ env.rocq_version }}
-          ocaml_version: 'default'
-          before_script: |
-            startGroup "Workaround permission issue"
-              sudo chown -R 1000:1000 .
-            endGroup
-          after_script: |
-            # The following command group builds the documentation for the project.
-            # Please modify it if your project requires a different build procedure
-            # for producing the docs.
-            startGroup "Build docs"
-            custom_doc_command="${{ env.custom_doc_command }}"
-            if [ -z "$custom_doc_command" ]
-            then
-              if ! command -v rocq >/dev/null 2>&1 ;
-              then
-                coq_makefile -f _CoqProject -o Makefile.blueprint.doc
-              else
-                rocq makefile -f _CoqProject -o Makefile.blueprint.doc
-              fi
-              make -f Makefile.blueprint.doc html
-            else
-              eval "$custom_doc_command"
-            fi
-            # Currently, we expect the built docs to exist in the ./html/ folder,
-            # if this is not the case then the following should be adjusted.
-            cp -r html ${{ env.homepage }}/docs
-            endGroup
+      - uses: cachix/install-nix-action@v31
 
-      - name: Revert permissions
-        # to avoid a warning at cleanup time
-        if: ${{ always() }}
-        run: sudo chown -R 1001:116 .
+      - name: Build Agda project and docs
+        # This assumes the flake's default dev shell provides agda with the
+        # project's dependencies. Adjust if the project is built differently.
+        run: |
+          nix develop -c agda --html --html-dir=html "$(find . -path "*/${main_module//.//}.agda" | head -n 1)"
+          mkdir -p ${{ env.homepage }}
+          cp -r html ${{ env.homepage }}/docs
+          cp ${{ env.homepage }}/docs/${main_module}.html ${{ env.homepage }}/docs/index.html
 
       - name: Build blueprint and copy to `home_page/blueprint`
         uses: xu-cheng/texlive-action@v2
@@ -101,11 +66,12 @@ jobs:
             source env/bin/activate
             pip install --upgrade pip requests wheel
             pip install pygraphviz --config-settings="--global-option=build_ext" --config-settings="--global-option=-L/usr/lib/graphviz/" --config-settings="--global-option=-R/usr/lib/graphviz/"
-            pip install rocqblueprint
-            rocqblueprint pdf
+            pip install agdablueprint
+            agdablueprint pdf
             mkdir -p home_page
             cp blueprint/print/print.pdf home_page/blueprint.pdf
-            rocqblueprint web
+            agdablueprint web
+            agdablueprint checkdecls
             cp -r blueprint/web home_page/blueprint
 
       - name: Bundle dependencies

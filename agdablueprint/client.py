@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.theme import Theme
 
-log = logging.getLogger("rocqblueprint tools")
+log = logging.getLogger("agdablueprint tools")
 log.setLevel(logging.INFO)
 if (log.hasHandlers()):
     log.handlers.clear()
@@ -69,8 +69,6 @@ class CustomMultiCommand(click.RichGroup):
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
-
-# TODO(reiniscirpons): Add support for dune?
 
 debug = False
 
@@ -122,10 +120,10 @@ def error(msg: str) -> NoReturn:
 @click.group(cls=CustomMultiCommand, context_settings={'help_option_names': ['-h', '--help']})
 @click.option('--debug', 'python_debug', default=False, is_flag=True,
               help='Display python tracebacks in case of error.')
-@click.version_option()
+@click.version_option(package_name="agdablueprint")
 def cli(python_debug: bool) -> None:
-    """Command line client to manage Rocq blueprints.
-    Use rocqblueprint COMMAND --help to get more help on any specific command."""
+    """Command line client to manage Agda blueprints.
+    Use agdablueprint COMMAND --help to get more help on any specific command."""
     global debug
     debug = python_debug
 
@@ -136,13 +134,13 @@ repo: Optional[Repo] = None
 try:
     repo = Repo(".", search_parent_directories=True)
 except InvalidGitRepositoryError:
-    error("Could not find a Rocq project. Please run this command from inside your project folder.")
+    error("Could not find an Agda project. Please run this command from inside your project folder.")
 
 assert repo is not None
 
-# locate opam files
+# locate Agda library files
 
-opamfile_paths = list(Path(repo.working_dir).glob("*.opam"))
+agdalib_paths = list(Path(repo.working_dir).glob("*.agda-lib"))
 
 # blueprint root directory
 
@@ -151,17 +149,17 @@ blueprint_root = Path(repo.working_dir)/"blueprint"
 @cli.command()
 def new() -> None:
     """
-    Create a new Rocq blueprint in the given repository.
+    Create a new Agda blueprint in the given repository.
     """
     loader = FileSystemLoader(Path(__file__).parent/"templates")
     env = Environment(loader=loader, variable_start_string='{|', variable_end_string='|}',
                       comment_start_string='{--', comment_end_string='--}')
 
-    console.print("\nWelcome to Rocq blueprint\n", style="title")
+    console.print("\nWelcome to Agda blueprint\n", style="title")
     can_try_ci = True
 
     if repo is None:
-        error("Could not find a Rocq project. Please run this command from inside your project folder.")
+        error("Could not find an Agda project. Please run this command from inside your project folder.")
 
     if repo.is_dirty():
         error("The repository contains uncommitted changes. Please clean it up before creating a blueprint.")
@@ -177,9 +175,9 @@ def new() -> None:
             # This will happen if there is no commit in the repo.
             name = "Anonymous"
 
-    if len(opamfile_paths) == 0:
+    if len(agdalib_paths) == 0:
         warning(
-            f"Could not find opam file in {repo.working_dir}. Will not propose to setup continuous integration.")
+            f"Could not find an .agda-lib file in {repo.working_dir}. Will not propose to setup continuous integration.")
         can_try_ci = False
 
     # Will now try to guess the GitHub url
@@ -230,7 +228,7 @@ def new() -> None:
     console.print("\nGeneral information about the project", style="title")
     config['title'] = ask("Project title", default="My formalization project")
     config['lib_name'] = ask(
-        "Rocq library name")
+        "Agda library name", default=agdalib_paths[0].stem if agdalib_paths else "")
     config['author'] = ask(
         "Author ([info]use \\and to separate authors if needed[/])", default=name)
 
@@ -306,47 +304,8 @@ def new() -> None:
     console.print("\nGithub CI configuration", style="title")
     workflow_files: List[Path] = []
     if can_try_ci and confirm("Do you want to configure a Github CI action to compile and deploy the blueprint?"):
-        config["opamfile"] = ""
-        if len(opamfile_paths) == 0:
-            warning(
-                "No opam file found, this will need to manually configured by\n"
-                "editing the .github/workflows/blueprint.yml file."
-            )
-        elif len(opamfile_paths) == 1:
-            config["opamfile"] = opamfile_paths[0].name
-        else:
-            opamfile_paths_str = [f.name for f in opamfile_paths]
-            config["opamfile"] = opamfile_paths_str[
-                askInt(
-                    "Which opam file to use for building the project in the CI?\n"
-                    + f"  Enter a number between 0 and {len(opamfile_paths)-1}, corresponding to the choices:\n  "
-                    + "\n  ".join(
-                        "[" + str(i) + "]: " + name
-                        for i, name in enumerate(opamfile_paths_str)
-                    )
-                    + "\n",
-                    choices=[str(i) for i in range(len(opamfile_paths))],
-                    default=0,
-                )
-            ]
-        config["rocq_version"] = ask(
-            "Which version of Rocq to use for building the project and docs in CI?\n"
-            "  Note: See https://github.com/rocq-community/docker-coq-action?tab=readme-ov-file#coq_version\n"
-            "  for more details about possible values.\n",
-            default='9.0',
-        )
-        config["custom_doc_command"] = ""
-        if confirm(
-            "Use custom documentation build command?\n"
-            "  Note: If the custom build command is long, we recommend skipping this step and manually\n"
-            "  adjusting it in the generated .github/workflows/blueprint.yml file afterwards.\n",
-            default=False,
-        ):
-            config["custom_doc_command"] = ask(
-                "Please enter the custom documentation build command.\n"
-                "  Note: Leave this field empty to skip.",
-                default="",
-            )
+        config["main_module"] = ask(
+            "Agda module importing everything, from which CI generates the HTML documentation")
         tpl = env.get_template("blueprint.yml")
         path = Path(repo.working_dir)/".github"/"workflows"
         path.mkdir(parents=True, exist_ok=True)
@@ -402,13 +361,46 @@ def web() -> None:
     mk_web()
 
 
+def do_checkdecls(html_dir: Path) -> None:
+    from agdablueprint.agda_html import AgdaHtml
+    decls_path = blueprint_root/"agda_decls"
+    if not decls_path.exists():
+        error(f"Could not find {decls_path}. Run agdablueprint web first.")
+    if not html_dir.is_dir():
+        error(f"Could not find the Agda HTML in {html_dir}. Run agda --html first.")
+    agda_html = AgdaHtml(html_dir)
+    missing = [decl for decl in decls_path.read_text().split()
+               if agda_html.resolve(decl) is None]
+    for decl in missing:
+        console.print(f"[error]{decl}[/] is missing.")
+    if missing:
+        sys.exit(1)
+    console.print("All declarations exist.")
+
+
+html_dir_option = click.option(
+    '--html-dir', type=click.Path(path_type=Path), default=Path("html"),
+    show_default=True, help="Output of agda --html, relative to the repository root.")
+
+
 @cli.command()
-def all() -> None:
+@html_dir_option
+def checkdecls(html_dir: Path) -> None:
+    """
+    Check that each declaration named in \\agda exists in the Agda HTML.
+    """
+    do_checkdecls(Path(repo.working_dir)/html_dir)
+
+
+@cli.command()
+@html_dir_option
+def all(html_dir: Path) -> None:
     """
     Compile both the pdf and html versions of the blueprint and check declarations.
     """
     mk_pdf()
     mk_web()
+    do_checkdecls(Path(repo.working_dir)/html_dir)
 
 
 @cli.command()
@@ -450,6 +442,6 @@ def safe_cli():
 
 
 if __name__ == "__main__":
-    # This allows `python3 -m rocqblueprint.client`.
+    # This allows `python3 -m agdablueprint.client`.
     # This is useful for when python is on the path but its installed scripts are not
     safe_cli()

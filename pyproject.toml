@@ -3,11 +3,11 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["rocqblueprint", "rocqblueprint.Packages"]
+packages = ["agdablueprint", "agdablueprint.Packages"]
 
 [project]
-name = "rocqblueprint"
-version = "0.0.9"
+name = "agdablueprint"
+version = "0.1.0"
 dependencies = [
   "plasTeX >= 3.1",
   "plastexshowmore >= 0.0.2",
@@ -24,14 +24,15 @@ authors = [
   {name="Patrick Massot"},
   {name="Peter LeFanu Lumsdaine"},
   {name="Andrej Bauer"},
-  {name="Reinis Cirpons"}
+  {name="Reinis Cirpons"},
+  {name="Jackson Brough"}
 ]
 maintainers = [
-  {name="Reinis Cirpons", email="reinis.cirpons@inria.fr"}
+  {name="Jackson Brough", email="jacksontbrough@gmail.com"}
 ]
-description = "Rocq prover blueprint plasTeX plugin."
+description = "Agda blueprint plasTeX plugin."
 readme = "README.md"
-keywords = ["Rocq", "Rocq blueprint"]
+keywords = ["Agda", "Agda blueprint"]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 classifiers = [
@@ -41,7 +42,7 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/reiniscirpons/rocqblueprint"
+Homepage = "https://github.com/broughjt/agdablueprint"
 
 [project.scripts]
-rocqblueprint = "rocqblueprint.client:safe_cli"
+agdablueprint = "agdablueprint.client:safe_cli"
